@@ -28,12 +28,13 @@ protected:
     unsigned char RSRV = 0x00;
 
 public:
-
     string port_name;
     
-    
+    // position
     int motor_id;
-    int motot_id_1;
+
+    // sync_write
+    int motor_id_1;
     int motor_id_2;
     
     int baudrate;
@@ -56,7 +57,7 @@ public:
     unsigned char read_buffer(int serial_port);
     void Torque_On();
 
-    void position1(unsigned int encorder);
+    void position(unsigned int encorder);
     void sync_wirte(unsigned int encorder_1, unsigned int encorder_2);
     unsigned short update_crc(unsigned char *TxPacket, unsigned short data_blk_size);
 };

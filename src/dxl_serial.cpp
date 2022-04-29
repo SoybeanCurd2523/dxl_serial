@@ -3,7 +3,10 @@
 int DXL::Initialize(){
 
   ROS_INFO("Initializing DXL...");
-
+  /*  ROS_INFO : 흰색
+      ROS_WARN : 주황색
+      ROS_ERROR : 빨간색
+  */
   int serial_port = open("/dev/ttyUSB0", O_RDWR|O_NOCTTY|O_NONBLOCK);
   if(serial_port!=-1){
     ROS_INFO("dxl_port_open_success");
@@ -20,7 +23,7 @@ int DXL::Initialize(){
       ROS_ERROR("Error %i from open: %s\n", errno, strerror(errno));
   
   if(tcgetattr(serial_port, &tty) != 0) 
-      ROS_WARN("Error %i from tcgetattr: %s\n", errno, strerror(errno));
+      ROS_ERROR("Error %i from tcgetattr: %s\n", errno, strerror(errno));
     
   struct termios {
     tcflag_t c_iflag;		/* input mode flags */
@@ -43,8 +46,7 @@ int DXL::Initialize(){
   default:
     break;
   } 
-  ROS_INFO("baudrate : %d", baudrate);
-    // tty.c_cflag = B57600 | CS8 | CLOCAL | CREAD;
+
     tty.c_iflag = IGNPAR;
     tty.c_oflag      = 0;
     tty.c_lflag      = 0;
@@ -57,6 +59,7 @@ int DXL::Initialize(){
   return serial_port;
 }
 
+// constructor
 DXL::DXL(){
     this->port_name = "/dev/ttyUSB0";
     this->baudrate = 20000000;
@@ -70,7 +73,6 @@ DXL::DXL(string port_name_, int baud){
   this->port_name = port_name_;
   this->baudrate = baud;
 }
-
 
 unsigned char DXL::read_buffer(int serial_port){
   
@@ -114,50 +116,44 @@ void DXL::Torque_On(){
   write(serial_port, arr, sizeof(arr));
 }
 
-void DXL::position1(unsigned int encorder){
-  //1024
-  // unsigned char position1[] = { 0xFF, 0xFF, 0xFD, 0x00, 0x01, 0x09, 0x00, 0x03, 0x74, 0x00, 0x00, 0x04, 0x00, 0x00, 0xB2, 0x89};
-  unsigned char position1[16] = {H1, H2, H3, RSRV, motor_id, 0x09, 0x00, 
-                              0x03, 0x74, 0x00};
-  ROS_INFO("function position1 : %d", encorder);
-  // ROS_INFO("encorder : %d", encorder);
-  // ROS_INFO("encorder : %x", encorder);
-  // ROS_INFO("encorder : %08x", encorder);
+void DXL::position(unsigned int encorder){
+
+  unsigned char position[16] = {H1, H2, H3, RSRV, motor_id, 0x09, 0x00, 0x03, 0x74, 0x00};
+  ROS_INFO("function position : %d", encorder);
 
   for(int i=0 ; i<=3 ; i++){
-    position1[10+i] = ( (encorder >> i * 8) & 0x000000ff );
+    position[10+i] = ( (encorder >> i * 8) & 0x000000ff );
   }
 
-  CRC = update_crc(position1, sizeof(position1) - 2);
+  CRC = update_crc(position, sizeof(position) - 2);
 
   CRC_L = (CRC & 0x00FF);
   CRC_H = (CRC >> 8) & 0x00FF;
 
-  position1[14] = CRC_L;
-  position1[15] = CRC_H;
+  position[14] = CRC_L;
+  position[15] = CRC_H;
 
-  for(int i=0; i< sizeof(position1) ; i++)
+  for(int i=0; i< sizeof(position) ; i++)
   {
-    ROS_INFO("position1[%d] = 0x%.2X", i, position1[i]);
+    ROS_INFO("position[%d] = 0x%.2X", i, position[i]);
   }
 
-  write(serial_port, position1, sizeof(position1));
+  write(serial_port, position, sizeof(position));
 }
 
 void DXL::sync_wirte(unsigned int encorder_1, unsigned int encorder_2){
-  //1024
  
-  unsigned char sync_wirte[24] = {H1, H2, H3, RSRV, 0xFE, 0x11, 0x00, 
-                              0x83, 0x74, 0x00, 0x04, 0x00};
+  unsigned char sync_wirte[24] = {H1, H2, H3, RSRV, 0xFE, 0x11, 0x00, 0x83, 0x74, 0x00, 0x04, 0x00};
   ROS_INFO("function position1 : %d", encorder_1);
   ROS_INFO("function position2 : %d", encorder_2);
 
+  sync_wirte[12] = motor_id_1;
+  sync_wirte[17] = motor_id_2;
 
-  sync_wirte[12] = 0x01;
-  sync_wirte[17] = 0x02;
   for(int i=0 ; i<=3 ; i++){
     sync_wirte[13+i] = ( (encorder_1 >> i * 8) & 0x000000ff );
   }
+
   for(int i=0 ; i<=3 ; i++){
     sync_wirte[18+i] = ( (encorder_2 >> i * 8) & 0x000000ff );
   }
@@ -170,10 +166,10 @@ void DXL::sync_wirte(unsigned int encorder_1, unsigned int encorder_2){
   sync_wirte[22] = CRC_L;
   sync_wirte[23] = CRC_H;
 
-//  for(int i=0; i< sizeof(sync_wirte) ; i++)
-//  {
-//    ROS_INFO("position1[%d] = 0x%.2X", i, sync_wirte[i]);
-//  }
+ for(int i=0; i< sizeof(sync_wirte) ; i++)
+ {
+   ROS_INFO("position1[%d] = 0x%.2X", i, sync_wirte[i]);
+ }
 
   write(serial_port, sync_wirte, sizeof(sync_wirte));
 }
