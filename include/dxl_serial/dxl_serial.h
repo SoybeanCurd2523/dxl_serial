@@ -8,12 +8,18 @@
 #include <stdio.h>
 #include <iostream>
 #include <string.h>
+// #include <Eigen/Dense>
+# include <eigen3/Eigen/Dense>
 
 // Linux headers
 #include <fcntl.h> // Contains file controls like O_RDWR
 #include <errno.h> // Error integer and strerror() function
 #include <termios.h> // Contains POSIX terminal control definitions
 #include <unistd.h> // write(), read(), close()
+
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
+using Eigen::VectorXi;
 
 // typedef unsigned char TYPE;
 
@@ -29,9 +35,6 @@ protected:
 
 public:
     string port_name;
-    
-    // position
-    int motor_id;
 
     // sync_write
     int motor_id_1;
@@ -55,10 +58,11 @@ public:
     int Initialize();
 
     unsigned char read_buffer(int serial_port);
-    void Torque_On();
+    void Torque_On(int motor_id);
 
     void position(unsigned int encorder);
-    void sync_wirte(unsigned int encorder_1, unsigned int encorder_2);
+    void sync_wirte(VectorXi A);
+    // void sync_wirte(unsigned int encorder_1, unsigned int encorder_2);
     unsigned short update_crc(unsigned char *TxPacket, unsigned short data_blk_size);
 };
 

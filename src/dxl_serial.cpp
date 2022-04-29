@@ -86,9 +86,10 @@ unsigned char DXL::read_buffer(int serial_port){
   return num_bytes;
 }
 
-void DXL::Torque_On(){
+void DXL::Torque_On(int motor_id){
   unsigned char arr[13] = {H1, H2, H3, RSRV, motor_id, 0x06, 0x00, 
                           0x03, 0x40, 0x00, 0x01};
+    ROS_INFO("Torque_On [%d]motor", motor_id);
     // unsigned char arr[13]; 
     // arr[0] = H1;
     // arr[1] = H2;
@@ -118,7 +119,7 @@ void DXL::Torque_On(){
 
 void DXL::position(unsigned int encorder){
 
-  unsigned char position[16] = {H1, H2, H3, RSRV, motor_id, 0x09, 0x00, 0x03, 0x74, 0x00};
+  unsigned char position[16] = {H1, H2, H3, RSRV, motor_id_1, 0x09, 0x00, 0x03, 0x74, 0x00};
   ROS_INFO("function position : %d", encorder);
 
   for(int i=0 ; i<=3 ; i++){
@@ -133,46 +134,87 @@ void DXL::position(unsigned int encorder){
   position[14] = CRC_L;
   position[15] = CRC_H;
 
-  for(int i=0; i< sizeof(position) ; i++)
-  {
-    ROS_INFO("position[%d] = 0x%.2X", i, position[i]);
-  }
+  // for(int i=0; i< sizeof(position) ; i++)
+  // {
+  //   ROS_INFO("position[%d] = 0x%.2X", i, position[i]);
+  // }
 
   write(serial_port, position, sizeof(position));
 }
 
-void DXL::sync_wirte(unsigned int encorder_1, unsigned int encorder_2){
- 
-  unsigned char sync_wirte[24] = {H1, H2, H3, RSRV, 0xFE, 0x11, 0x00, 0x83, 0x74, 0x00, 0x04, 0x00};
-  ROS_INFO("function position1 : %d", encorder_1);
-  ROS_INFO("function position2 : %d", encorder_2);
+void DXL::sync_wirte(VectorXi q){
 
-  sync_wirte[12] = motor_id_1;
-  sync_wirte[17] = motor_id_2;
-
-  for(int i=0 ; i<=3 ; i++){
-    sync_wirte[13+i] = ( (encorder_1 >> i * 8) & 0x000000ff );
+  int n;
+  int size = q.size();
+  n = 14 + 5 * size;
+  
+  unsigned char sync_wirte[n] = {H1, H2, H3, RSRV, 0xFE, 0x11, 0x00, 
+                              0x83, 0x74, 0x00, 0x04, 0x00};
+  
+  //length (packet 5,6)
+  for(int i=0 ; i<=1 ; i++){
+    sync_wirte[5+i] = ( (n-7 >> i * 8) & 0x000000ff );
+  }
+  
+  //motor id
+  for(int i=0; i<size; i++){
+      sync_wirte[12 + 5*i] = i+1;
   }
 
-  for(int i=0 ; i<=3 ; i++){
-    sync_wirte[18+i] = ( (encorder_2 >> i * 8) & 0x000000ff );
-  }
+  //encoder
+  for(int j=0; j<size; j++){
+      for(int i=0 ; i<=3 ; i++){
+    sync_wirte[(13 + 5*j) + i] = ( (q[j] >> i * 8) & 0x000000ff );
+  }}
+  
 
   CRC = update_crc(sync_wirte, sizeof(sync_wirte) - 2);
 
   CRC_L = (CRC & 0x00FF);
   CRC_H = (CRC >> 8) & 0x00FF;
 
-  sync_wirte[22] = CRC_L;
-  sync_wirte[23] = CRC_H;
+  sync_wirte[n-2] = CRC_L;
+  sync_wirte[n-1] = CRC_H;
 
- for(int i=0; i< sizeof(sync_wirte) ; i++)
- {
-   ROS_INFO("position1[%d] = 0x%.2X", i, sync_wirte[i]);
- }
-
+ for(int i=0; i< n ; i++)
+  {
+    ROS_INFO("position1[%d] = 0x%.2X", i, sync_wirte[i]);
+  }
   write(serial_port, sync_wirte, sizeof(sync_wirte));
 }
+
+// void DXL::sync_wirte(unsigned int encorder_1, unsigned int encorder_2){
+ 
+//   unsigned char sync_wirte[24] = {H1, H2, H3, RSRV, 0xFE, 0x11, 0x00, 0x83, 0x74, 0x00, 0x04, 0x00};
+//   ROS_INFO("function position1 : %d", encorder_1);
+//   ROS_INFO("function position2 : %d", encorder_2);
+
+//   sync_wirte[12] = motor_id_1;
+//   sync_wirte[17] = motor_id_2;
+
+//   for(int i=0 ; i<=3 ; i++){
+//     sync_wirte[13+i] = ( (encorder_1 >> i * 8) & 0x000000ff );
+//   }
+
+//   for(int i=0 ; i<=3 ; i++){
+//     sync_wirte[18+i] = ( (encorder_2 >> i * 8) & 0x000000ff );
+//   }
+
+//   CRC = update_crc(sync_wirte, sizeof(sync_wirte) - 2);
+
+//   CRC_L = (CRC & 0x00FF);
+//   CRC_H = (CRC >> 8) & 0x00FF;
+
+//   sync_wirte[22] = CRC_L;
+//   sync_wirte[23] = CRC_H;
+
+// //  for(int i=0; i< sizeof(sync_wirte) ; i++)
+// //  {
+// //    ROS_INFO("position1[%d] = 0x%.2X", i, sync_wirte[i]);
+// //  }
+
+//   write(serial_port, sync_wirte, sizeof(sync_wirte));
+// }
 
 unsigned short DXL::update_crc(unsigned char *TxPacket, unsigned short data_blk_size)
 {
