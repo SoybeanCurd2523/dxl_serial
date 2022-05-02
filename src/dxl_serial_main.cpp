@@ -6,8 +6,8 @@ void moterinfo(){
   ROS_INFO("setting dynamixel ID...");
 
   dxl.motor_num = 3;
-  for(int i=1 ; i<= dxl.motor_num ; i++){
-    dxl.motor[i] = i;
+  for(int i=0 ; i< dxl.motor_num ; i++){
+    dxl.motor[i] = i+1;
   }
 }
 
@@ -18,9 +18,11 @@ int main(int argc, char **argv)
 
   ros::Publisher chatter_pub = nh.advertise<std_msgs::String>("chatter", 1000);
   moterinfo();
-  ROS_INFO("dxl.motor_id_1 : %d", dxl.motor_id_1);
-  ROS_INFO("dxl.motor_id_2 : %d", dxl.motor_id_2);
-  
+
+  for(int i=0 ; i< dxl.motor_num ; i++){
+    ROS_INFO("dxl.motor[%d] : %d", i, i+1);
+  }
+
   dxl.serial_port = dxl.Initialize();
   
   ROS_INFO("dxl.serial_port : %d", dxl.serial_port);
@@ -32,8 +34,9 @@ int main(int argc, char **argv)
 
   VectorXi q = VectorXi::Zero(dxl.motor_num);
   
-  ros::Rate loop_rate(0.5);
+  ros::Rate loop_rate(50);
   int count = 0;
+  
   while (ros::ok())
   {
     if(count > 4095)
@@ -42,8 +45,9 @@ int main(int argc, char **argv)
     // dxl.position(count);
     // dxl.sync_write(count, count);
 
-      for(int i=0 ; i< dxl.motor_num ; i++){
-        q(i) = count;
+        dxl.encorder2 = round(2047*(-sin(2 * M_PI * count / 1000 + M_PI / 2)) + 2047); //hs
+      for(int i=0 ; i < dxl.motor_num ; i++){
+        q(i) = dxl.encorder2;
       }   
 
       dxl.sync_write(q);
@@ -61,7 +65,10 @@ int main(int argc, char **argv)
     ros::spinOnce();
 
     loop_rate.sleep();
-    count += 500;
+    //count += 500;
+    
+    
+    count++;
   }
 }
 

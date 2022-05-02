@@ -120,37 +120,38 @@ void DXL::Torque_On(int motor_id){
   write(serial_port, arr, sizeof(arr));
 }
 
-void DXL::position(unsigned int encorder){
+// void DXL::position(unsigned int encorder){
 
-  unsigned char position[16] = {H1, H2, H3, RSRV, motor_id_1, 0x09, 0x00, 0x03, 0x74, 0x00};
-  ROS_INFO("function position : %d", encorder);
+//   unsigned char position[16] = {H1, H2, H3, RSRV, motor_id_1, 0x09, 0x00, 0x03, 0x74, 0x00};
+//   ROS_INFO("function position : %d", encorder);
 
-  for(int i=0 ; i<=3 ; i++){
-    position[10+i] = ( (encorder >> i * 8) & 0x000000ff );
-  }
+//   for(int i=0 ; i<=3 ; i++){
+//     position[10+i] = ( (encorder >> i * 8) & 0x000000ff );
+//   }
 
-  CRC = update_crc(position, sizeof(position) - 2);
+//   CRC = update_crc(position, sizeof(position) - 2);
 
-  CRC_L = (CRC & 0x00FF);
-  CRC_H = (CRC >> 8) & 0x00FF;
+//   CRC_L = (CRC & 0x00FF);
+//   CRC_H = (CRC >> 8) & 0x00FF;
 
-  position[14] = CRC_L;
-  position[15] = CRC_H;
+//   position[14] = CRC_L;
+//   position[15] = CRC_H;
 
-  // for(int i=0; i< sizeof(position) ; i++)
-  // {
-  //   ROS_INFO("position[%d] = 0x%.2X", i, position[i]);
-  // }
+//   // for(int i=0; i< sizeof(position) ; i++)
+//   // {
+//   //   ROS_INFO("position[%d] = 0x%.2X", i, position[i]);
+//   // }
 
-  write(serial_port, position, sizeof(position));
-}
+//   write(serial_port, position, sizeof(position));
+// }
 
 void DXL::sync_write(VectorXi q){
 
   int n;
   int size = q.size();
   n = 14 + 5 * size;
-  
+  // 24, 29
+  // ROS_INFO("size :%d", size);
   unsigned char sync_write[n] = {H1, H2, H3, RSRV, 0xFE, n, 0x00, 
                               0x83, 0x74, 0x00, 0x04, 0x00};
   
@@ -168,7 +169,8 @@ void DXL::sync_write(VectorXi q){
   for(int j=0; j<size; j++){
       for(int i=0 ; i<=3 ; i++){
     sync_write[(13 + 5*j) + i] = ( (q[j] >> i * 8) & 0x000000ff );
-  }}
+    }
+  }
   
 
   CRC = update_crc(sync_write, sizeof(sync_write) - 2);
@@ -181,7 +183,7 @@ void DXL::sync_write(VectorXi q){
 
  for(int i=0; i< n ; i++)
   {
-    ROS_INFO("position1[%d] = 0x%.2X", i, sync_write[i]);
+    ROS_INFO("sync_write[%d] = 0x%.2X", i,  sync_write[i]);
   }
   write(serial_port, sync_write, sizeof(sync_write));
 }
