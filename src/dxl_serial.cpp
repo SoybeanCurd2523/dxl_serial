@@ -72,9 +72,9 @@ DXL::DXL(string port_name_){
   this->baudrate = 20000000;
 }
 
-DXL::DXL(string port_name_, int baud){
+DXL::DXL(string port_name_, int baudrate_){
   this->port_name = port_name_;
-  this->baudrate = baud;
+  this->baudrate = baudrate_;
 }
 
 unsigned char DXL::read_buffer(int serial_port){
