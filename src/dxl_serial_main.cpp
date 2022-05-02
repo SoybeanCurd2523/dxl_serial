@@ -4,8 +4,11 @@ DXL dxl("/dev/ttyUSB0",2000000);
 
 void moterinfo(){ 
   ROS_INFO("setting dynamixel ID...");
-  dxl.motor_id_1 = 1;
-  dxl.motor_id_2 = 2;
+
+  dxl.motor_num = 3;
+  for(int i=1 ; i<= dxl.motor_num ; i++){
+    dxl.motor[i] = i;
+  }
 }
 
 int main(int argc, char **argv)
@@ -14,7 +17,6 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
 
   ros::Publisher chatter_pub = nh.advertise<std_msgs::String>("chatter", 1000);
-  
   moterinfo();
   ROS_INFO("dxl.motor_id_1 : %d", dxl.motor_id_1);
   ROS_INFO("dxl.motor_id_2 : %d", dxl.motor_id_2);
@@ -23,10 +25,12 @@ int main(int argc, char **argv)
   
   ROS_INFO("dxl.serial_port : %d", dxl.serial_port);
 
-  dxl.Torque_On(1);
-  dxl.Torque_On(2);
+  for(int i=1 ; i<= dxl.motor_num ; i++){
+      dxl.Torque_On(i);
+  }
 
-  VectorXi A = VectorXi::Zero(2);
+
+  VectorXi q = VectorXi::Zero(dxl.motor_num);
   
   ros::Rate loop_rate(0.5);
   int count = 0;
@@ -36,11 +40,16 @@ int main(int argc, char **argv)
       count = 0;
 
     // dxl.position(count);
-    // dxl.sync_wirte(count, count);
-    A(0)=count; 
-    A(1)=count;
+    // dxl.sync_write(count, count);
 
-    dxl.sync_wirte(A);
+      for(int i=0 ; i< dxl.motor_num ; i++){
+        q(i) = count;
+      }   
+
+      dxl.sync_write(q);
+
+
+    // dxl.sync_write(A);
     
     dxl.buffer_data = dxl.read_buffer(dxl.serial_port);
 

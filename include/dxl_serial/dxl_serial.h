@@ -35,12 +35,17 @@ protected:
 
 public:
     string port_name;
+    int baudrate;
 
     // sync_write
+    
+    int motor[100];
+
+    int motor_num;
+    
     int motor_id_1;
     int motor_id_2;
     
-    int baudrate;
     int serial_port;
     unsigned int encorder;
 
@@ -61,8 +66,10 @@ public:
     void Torque_On(int motor_id);
 
     void position(unsigned int encorder);
-    void sync_wirte(VectorXi A);
-    // void sync_wirte(unsigned int encorder_1, unsigned int encorder_2);
+
+    void sync_write(VectorXi q);
+
+    // void sync_write(unsigned int encorder_1, unsigned int encorder_2);
     unsigned short update_crc(unsigned char *TxPacket, unsigned short data_blk_size);
 };
 
