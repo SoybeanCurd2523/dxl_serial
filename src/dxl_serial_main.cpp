@@ -39,11 +39,9 @@ int main(int argc, char **argv)
       count = 0;
     // dxl.sync_write(count, count);
 
-    dxl.encorder = round(2047*(-sin(2 * M_PI * count / 1000 + M_PI / 2)) + 2047); 
-
-    for(int i=0 ; i < dxl.motor_num ; i++){
-      q(i) = dxl.encorder;
-    }   
+    q[0] = round(2047*(-sin(2 * M_PI * count / 1000 + M_PI / 2)) + 2047); 
+    q[1] = round(2047*(-sin(2 * M_PI * (count+300) / 1000 + M_PI / 2)) + 2047);
+    q[2] = round(2047*(-sin(2 * M_PI * (count+600) / 1000 + M_PI / 2)) + 2047);
 
     dxl.sync_write(q);
 
